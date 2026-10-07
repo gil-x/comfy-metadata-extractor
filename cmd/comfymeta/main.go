@@ -35,12 +35,28 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
 
 	comfymeta "github.com/gil-x/comfy-metadata-extractor"
 )
+
+// version is set at release time by GoReleaser (-ldflags "-X main.version=...").
+var version = "dev"
+
+// buildVersion returns the release version, or the module version for
+// binaries built with "go install ...@vX.Y.Z".
+func buildVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return version
+}
 
 // ---------------------------------------------------------------------------
 // Content modes
@@ -86,6 +102,8 @@ func main() {
 		fExport = flag.Bool("export", false, "write to a file named after the source")
 		fOutdir = flag.String("outdir", "", "destination `DIR` for exported files")
 		fRec    = flag.Bool("r", false, "walk subdirectories recursively")
+
+		fVersion = flag.Bool("version", false, "print the version and exit")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "comfymeta — extract ComfyUI metadata from PNG images, MP4 videos and MP3 audio\n\n")
@@ -94,6 +112,11 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	if *fVersion {
+		fmt.Println("comfymeta", buildVersion())
+		return
+	}
 
 	args := flag.Args()
 	if len(args) == 0 {

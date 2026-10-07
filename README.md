@@ -1,5 +1,10 @@
 # comfymeta
 
+[![CI](https://github.com/gil-x/comfy-metadata-extractor/actions/workflows/ci.yml/badge.svg)](https://github.com/gil-x/comfy-metadata-extractor/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/gil-x/comfy-metadata-extractor)](https://github.com/gil-x/comfy-metadata-extractor/releases/latest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/gil-x/comfy-metadata-extractor.svg)](https://pkg.go.dev/github.com/gil-x/comfy-metadata-extractor)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Recover the generation parameters of any image, video or audio file made with [ComfyUI](https://github.com/comfyanonymous/ComfyUI).**
 
 ComfyUI stores the full graph that produced each file in the file's metadata. `comfymeta` reads it and shows what matters: model, prompts, seed, sampler, dimensions, duration, BPM… It can also export the raw `prompt` and `workflow` JSON so you can load them back into ComfyUI.
@@ -34,13 +39,37 @@ File: testdata/specimen.mp3
 
 ## Installation
 
+### Download a binary
+
+Prebuilt binaries for Windows, macOS and Linux (x86-64 and ARM64) are on the [Releases page](https://github.com/gil-x/comfy-metadata-extractor/releases/latest).
+
+| System                        | Archive                                  |
+|-------------------------------|------------------------------------------|
+| Windows                       | `comfymeta_<version>_windows_amd64.zip`  |
+| macOS (Apple Silicon)         | `comfymeta_<version>_macos_arm64.tar.gz` |
+| macOS (Intel)                 | `comfymeta_<version>_macos_amd64.tar.gz` |
+| Linux                         | `comfymeta_<version>_linux_amd64.tar.gz` |
+| Linux ARM (Raspberry Pi 4/5…) | `comfymeta_<version>_linux_arm64.tar.gz` |
+
+Extract the archive and put `comfymeta` (or `comfymeta.exe`) somewhere on your `PATH`. Each release also has a `checksums.txt` file with the SHA-256 of every archive.
+
+The binaries are not code-signed, so the first launch may trigger a warning:
+
+- **macOS**: "cannot be opened because the developer cannot be verified". Remove the quarantine flag once:
+  ```sh
+  xattr -d com.apple.quarantine ./comfymeta
+  ```
+- **Windows**: SmartScreen may show "Windows protected your PC". Click **More info**, then **Run anyway**.
+
+### With Go
+
 With Go 1.22 or later:
 
 ```sh
 go install github.com/gil-x/comfy-metadata-extractor/cmd/comfymeta@latest
 ```
 
-Or from source:
+### From source
 
 ```sh
 git clone https://github.com/gil-x/comfy-metadata-extractor.git
@@ -67,6 +96,7 @@ A path can be a file (`.png`, `.mp4`, `.mov`, `.m4v`, `.mp3`) or a directory. Fo
 | `-workflow` | the `workflow` JSON (editor graph), indented            |
 | `-raw`      | every raw metadata entry                                |
 | `-keys`     | the list of metadata keys present                       |
+| `-version`  | the comfymeta version                                   |
 
 ### Where to write it
 
@@ -174,13 +204,26 @@ fmt.Println(p.MediaType, p.Model, *p.Seed)
 ├── id3.go           # ID3v2 tag reader (MP3)
 ├── params.go        # Params and Extract: from graph to parameters
 ├── graph.go         # "prompt" graph traversal
-└── testdata/        # one real ComfyUI render per format
+├── testdata/        # one real ComfyUI render per format
+├── .github/workflows/  # CI (tests on every push) and Release (on v* tags)
+└── .goreleaser.yaml    # cross-platform release build
 ```
 
 ```sh
 go test ./...
 go vet ./...
 ```
+
+### Releasing
+
+CI runs vet and the tests on Linux, macOS and Windows on every push. To publish a release, push a version tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The [Release workflow](.github/workflows/release.yml) then runs [GoReleaser](https://goreleaser.com) ([config](.goreleaser.yaml)), which builds every platform, packages the archives with the README and license, and publishes them on the Releases page with a changelog. To try the build locally without publishing anything: `goreleaser release --snapshot --clean`.
 
 ## License
 
