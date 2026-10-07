@@ -51,6 +51,41 @@ func (g promptGraph) intByTitle(titles ...string) *int64 {
 	return nil
 }
 
+// isOutputNode reports whether ComfyUI treats a node as an output, i.e. a node
+// it executes along with everything upstream of it.
+func isOutputNode(classType string) bool {
+	return strings.Contains(classType, "Save") || strings.Contains(classType, "Preview") ||
+		strings.Contains(classType, "VideoCombine")
+}
+
+// executed returns the subgraph ComfyUI actually runs: the output nodes and
+// every node upstream of them. Dangling branches (e.g. a LoadAudio node whose
+// result is never used) are dropped. If no output node is recognized, the
+// graph is returned unchanged.
+func (g promptGraph) executed() promptGraph {
+	var stack []string
+	for id, n := range g {
+		if isOutputNode(n.ClassType) {
+			stack = append(stack, id)
+		}
+	}
+	if len(stack) == 0 {
+		return g
+	}
+	out := promptGraph{}
+	for len(stack) > 0 {
+		id := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		n, ok := g[id]
+		if _, seen := out[id]; seen || !ok {
+			continue
+		}
+		out[id] = n
+		stack = append(stack, g.inputLinks(id)...)
+	}
+	return out
+}
+
 func (g promptGraph) sortedIDs() []string {
 	ids := make([]string, 0, len(g))
 	for id := range g {

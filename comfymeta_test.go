@@ -57,8 +57,9 @@ func TestSpecimens(t *testing.T) {
 				if p.Duration == nil || *p.Duration != 40 {
 					t.Errorf("unexpected duration: %v", p.Duration)
 				}
-				if len(p.LoadedAudio) != 1 || p.LoadedAudio[0] != "Painkiller - Forest fight.mp3" {
-					t.Errorf("unexpected source audio: %v", p.LoadedAudio)
+				// the specimen has a LoadAudio node whose branch is never used
+				if len(p.LoadedAudio) != 0 {
+					t.Errorf("unconnected LoadAudio reported as source audio: %v", p.LoadedAudio)
 				}
 			},
 		},
@@ -158,5 +159,30 @@ func TestReadWithoutMetadata(t *testing.T) {
 	chunks, err := Read(path)
 	if err != nil || len(chunks) != 0 {
 		t.Errorf("MP3 without a tag: chunks=%v err=%v", chunks, err)
+	}
+}
+
+func TestExtractIgnoresUnexecutedNodes(t *testing.T) {
+	// LoadAudio "used.mp3" feeds the sampler (audio-to-audio); LoadAudio
+	// "dangling.mp3" and LoadImage "dangling.png" lead to no output node.
+	prompt := `{
+		"1": {"class_type": "LoadAudio", "inputs": {"audio": "used.mp3"}},
+		"2": {"class_type": "VAEEncodeAudio", "inputs": {"audio": ["1", 0]}},
+		"3": {"class_type": "KSampler", "inputs": {"seed": 7, "latent_image": ["2", 0]}},
+		"4": {"class_type": "VAEDecodeAudio", "inputs": {"samples": ["3", 0]}},
+		"5": {"class_type": "SaveAudioMP3", "inputs": {"audio": ["4", 0]}},
+		"6": {"class_type": "LoadAudio", "inputs": {"audio": "dangling.mp3"}},
+		"7": {"class_type": "VAEEncodeAudio", "inputs": {"audio": ["6", 0]}},
+		"8": {"class_type": "LoadImage", "inputs": {"image": "dangling.png"}}
+	}`
+	p := Extract("x.mp3", []Chunk{{Keyword: "prompt", Text: prompt}})
+	if len(p.LoadedAudio) != 1 || p.LoadedAudio[0] != "used.mp3" {
+		t.Errorf("loaded_audio = %v, want [used.mp3]", p.LoadedAudio)
+	}
+	if len(p.LoadedImages) != 0 {
+		t.Errorf("loaded_images = %v, want none", p.LoadedImages)
+	}
+	if p.Seed == nil || *p.Seed != 7 {
+		t.Errorf("seed = %v, want 7", p.Seed)
 	}
 }

@@ -20,7 +20,6 @@ $ comfymeta testdata/specimen.mp3
 File: testdata/specimen.mp3
   Type:            audio
   Model:           ace_step_1.5_turbo_aio.safetensors
-  Source audio:    Painkiller - Forest fight.mp3
   Tags:            industrial techno, mechanical percussion, metallic clanks, hydraulic pistons,
                    driving four-on-the-floor kick, distorted analog bass, 128 bpm,
                    relentless, hypnotic, instrumental
@@ -127,7 +126,7 @@ comfymeta -json image.png | jq -r .seed
 
 ## Extracted parameters
 
-`comfymeta` works out the kind of generation from the graph's nodes, then reads the matching fields. Missing fields are omitted.
+`comfymeta` works out the kind of generation from the graph's nodes, then reads the matching fields. Only nodes ComfyUI actually ran are considered: a loader left unconnected in the workflow (e.g. a `LoadAudio` or `LoadImage` whose output goes nowhere) is ignored. Missing fields are omitted.
 
 | Type      | Detected from                                     | Fields                                                                                   |
 |-----------|---------------------------------------------------|------------------------------------------------------------------------------------------|

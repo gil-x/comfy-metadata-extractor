@@ -61,6 +61,8 @@ func Extract(path string, chunks []Chunk) Params {
 	if err := json.Unmarshal([]byte(c.Text), &g); err != nil {
 		return p
 	}
+	// ignore nodes left unconnected in the workflow: ComfyUI never runs them
+	g = g.executed()
 
 	p.LoadedImages = g.loadedImages()
 	p.Model = g.checkpoint()
