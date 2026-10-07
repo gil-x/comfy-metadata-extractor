@@ -1,0 +1,14 @@
+# Compiled binary (go build ./cmd/comfymeta)
+/comfymeta
+/dist/
+
+# Files written by -export
+*.summary.txt
+*.raw.txt
+*.keys.txt
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
